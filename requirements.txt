@@ -1,0 +1,13 @@
+jupyterlab
+numpy
+pandas
+matplotlib>=3.8
+seaborn>=0.13
+scipy
+scikit-learn
+umap-learn
+adjustText
+# only needed to regenerate the data files / notebooks:
+# pydeseq2
+# nbformat
+# python-docx
