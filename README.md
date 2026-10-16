@@ -11,9 +11,6 @@ This 2-hour, hands-on workshop explores the Python data visualization ecosystem,
 bulk RNA-seq dataset, we build quality-control plots, distributions, volcano and MA plots, heatmaps and PCA/t-SNE/UMAP
 embeddings, and then assemble them into a **multi-panel, publication-ready figure** exported at high resolution.
 
-The figure you export today (PDF/SVG) is the starting point for **Day 4 – Building figures with Inkscape**, and the
-same dataset is used on **Day 2 – Data visualization in R (ggplot2)**.
-
 ### Learning objectives
 
 By the end of this workshop, you should be able to:
