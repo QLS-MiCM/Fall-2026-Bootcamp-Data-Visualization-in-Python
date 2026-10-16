@@ -1,9 +1,5 @@
 # Data Visualization in Python
 
-**QLS-MiCM · Code to Manuscript Bootcamp · Day 1**
-Monday, October 26, 2026 · 2:30–4:30 pm · McIntyre Room 1027
-Instructor: Zahra Tavakol Hamedani · Facilitator: Sameena Karsan
-
 **Click one of these to start:**
 [![Open student version in Colab](https://img.shields.io/badge/Open%20in%20Colab-Student%20version-blue?logo=googlecolab)](https://colab.research.google.com/github/QLS-MiCM/DataVisualizationInPython/blob/main/Exercises/scripts/DataVisualizationInPython.ipynb)
 [![Open solutions version in Colab](https://img.shields.io/badge/Open%20in%20Colab-Solutions%20version-green?logo=googlecolab)](https://colab.research.google.com/github/QLS-MiCM/DataVisualizationInPython/blob/main/Exercises/solutions/DataVisualizationInPython_solutions.ipynb)
