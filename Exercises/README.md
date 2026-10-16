@@ -12,6 +12,6 @@
 
 **Paths:** in Colab, data are read straight from GitHub. Locally, start Jupyter in `Exercises/scripts/` (data are read from `../data/`); exported figures go to `figures/` next to the notebook.
 
-**For instructors:** edit `data_scripts/build_notebooks.py`, not the `.ipynb` files, then run
+**Comment:** edit `data_scripts/build_notebooks.py`, not the `.ipynb` files, then run
 `python Exercises/data_scripts/build_notebooks.py` and re-execute the solutions notebook
 (`jupyter nbconvert --to notebook --execute --inplace Exercises/solutions/DataVisualizationInPython_solutions.ipynb`, run from inside `Exercises/solutions/`).
