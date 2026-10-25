@@ -158,40 +158,59 @@ There are two ways to write Matplotlib code:
 |---|---|
 | `plt.plot(x, y)`<br>`plt.title("...")` | `fig, ax = plt.subplots()`<br>`ax.plot(x, y)`<br>`ax.set_title("...")` |
 | Quick, but "which plot am I editing?" gets confusing | You always know which Axes you are drawing on → essential for multi-panel figures |
+
+#### Building a figure step by step
+
+In this notebook we build most figures **one step at a time**, so you can see exactly what each function changes.
+Jupyter draws a figure automatically only in the cell that *creates* it. In the following cells we modify the same
+`fig`/`ax` objects and end the cell with **`fig`** to display the updated figure again.
 """)
 
 code("""
-# Library size = total number of reads per sample (a basic quality check)
-lib_size = counts.sum(axis=0) / 1e6          # in millions of reads
+# Step 1 – create an empty Figure with one Axes, and draw the bars
+lib_size = counts.sum(axis=0) / 1e6          # library size = total reads per sample, in millions
 
 fig, ax = plt.subplots(figsize=(7, 3))        # figure size in inches (width, height)
 ax.bar(lib_size.index, lib_size.values, color="grey")
-
-ax.set_xlabel("Sample")
-ax.set_ylabel("Library size (million reads)")   # always give units!
-ax.set_title("Sequencing depth per sample")
-ax.tick_params(axis="x", rotation=90)
 plt.show()
 """)
 
+code("""
+# Step 2 – label the axes (always give units!)
+ax.set_xlabel("Sample")
+ax.set_ylabel("Library size (million reads)")
+fig                                           # display the updated figure
+""")
+
+code("""
+# Step 3 – add a title and rotate the sample names so they don't overlap
+ax.set_title("Sequencing depth per sample")
+ax.tick_params(axis="x", rotation=90)
+fig
+""")
+
 md("""
-**Customising** is just calling more `ax.set_...()` methods. Below we colour each bar by tissue and add a legend.
+**Customising** is just calling more methods on `ax`. Below we colour each bar by tissue and then add a legend.
 Notice how we *map* each sample to a colour using the dictionary we defined earlier.
 """)
 
 code("""
+# Step 1 – bars coloured by tissue; ax.set() sets several properties at once
 bar_colors = meta["tissue"].map(TISSUE_COLORS)
 
 fig, ax = plt.subplots(figsize=(7, 3))
 ax.bar(meta["sample"], lib_size[meta["sample"]], color=bar_colors, edgecolor="black", linewidth=0.5)
 ax.set(xlabel="Sample", ylabel="Library size (million reads)", title="Sequencing depth per sample")
 ax.tick_params(axis="x", rotation=90)
+plt.show()
+""")
 
-# Build a legend by hand: one coloured patch per tissue
+code("""
+# Step 2 – build a legend by hand: one coloured patch per tissue, placed outside the plot
 from matplotlib.patches import Patch
 handles = [Patch(color=c, label=t) for t, c in TISSUE_COLORS.items()]
 ax.legend(handles=handles, title="Tissue", frameon=False, bbox_to_anchor=(1, 1))
-plt.show()
+fig
 """)
 
 md("""
@@ -199,28 +218,46 @@ md("""
 
 Long sample names are easier to read on the y-axis. Re-draw the library-size plot as a **horizontal** bar chart
 (`ax.barh`) with bars coloured by **condition** (`CONDITION_COLORS`), and add a dashed vertical line at the median
-library size (`ax.axvline`).
+library size (`ax.axvline`). Run the three steps one after the other and watch the figure change.
 """)
 
 ex("""
+# Step 1 – horizontal bars coloured by condition
 fig, ax = plt.subplots(figsize=(4, 5))
 ax.barh(meta["sample"], lib_size[meta["sample"]], color=meta["condition"].map(___))
-ax.axvline(lib_size.___(), color="black", linestyle="--", linewidth=1)
-ax.set(xlabel=___, ylabel="Sample")
 ax.invert_yaxis()            # first sample at the top
-handles = [Patch(color=c, label=k) for k, c in CONDITION_COLORS.items()]
-ax.legend(handles=handles, frameon=False, bbox_to_anchor=(1, 1), loc="upper left")
 plt.show()
 """, """
+# Step 1 – horizontal bars coloured by condition
 fig, ax = plt.subplots(figsize=(4, 5))
 ax.barh(meta["sample"], lib_size[meta["sample"]], color=meta["condition"].map(CONDITION_COLORS))
-ax.axvline(lib_size.median(), color="black", linestyle="--", linewidth=1, label="median")
-ax.set(xlabel="Library size (million reads)", ylabel="Sample")
 ax.invert_yaxis()            # first sample at the top
+plt.show()
+""")
+
+ex("""
+# Step 2 – dashed line at the median library size
+ax.axvline(lib_size.___(), color="black", linestyle="--", linewidth=1)
+fig
+""", """
+# Step 2 – dashed line at the median library size
+ax.axvline(lib_size.median(), color="black", linestyle="--", linewidth=1)
+fig
+""")
+
+ex("""
+# Step 3 – axis labels and legend
+ax.set(xlabel=___, ylabel="Sample")
+handles = [Patch(color=c, label=k) for k, c in CONDITION_COLORS.items()]
+ax.legend(handles=handles, frameon=False, bbox_to_anchor=(1, 1), loc="upper left")
+fig
+""", """
+# Step 3 – axis labels and legend
+ax.set(xlabel="Library size (million reads)", ylabel="Sample")
 handles = [Patch(color=c, label=k) for k, c in CONDITION_COLORS.items()]
 ax.legend(handles=handles + [plt.Line2D([], [], color="black", ls="--", label="median")],
           frameon=False, bbox_to_anchor=(1, 1), loc="upper left")
-plt.show()
+fig
 """)
 
 # =============================================================================
@@ -256,27 +293,39 @@ Let's look at the distribution of expression values in every sample (a classic Q
 """)
 
 code("""
+# Step 1 – one Seaborn call draws all 18 boxes on our Axes (axes-level -> ax=)
 fig, ax = plt.subplots(figsize=(8, 3.5))
 sns.boxplot(data=expr_long, x="sample", y="log2cpm", hue="tissue",
-            palette=TISSUE_COLORS, showfliers=False, linewidth=0.8, ax=ax)   # axes-level -> ax=
-ax.set(xlabel="", ylabel="log$_2$(CPM + 1)")
-ax.tick_params(axis="x", rotation=90)
-sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1), frameon=False)
+            palette=TISSUE_COLORS, showfliers=False, linewidth=0.8, ax=ax)
 plt.show()
 """)
 
 code("""
-# (Optional) Figure-level: one density curve per sample (hue="sample"), coloured by its condition, one panel per tissue
+# Step 2 – it is still a normal Matplotlib Axes: tidy up labels, ticks and legend
+ax.set(xlabel="", ylabel="log$_2$(CPM + 1)")
+ax.tick_params(axis="x", rotation=90)
+sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1), frameon=False)
+fig
+""")
+
+code("""
+# (Optional) Step 1 – figure-level: one density curve per sample (hue="sample"), coloured by its condition,
+# one panel per tissue (col="tissue")
 sample_colors = dict(zip(meta["sample"], meta["condition"].map(CONDITION_COLORS)))
 
 g = sns.displot(data=expr_long, x="log2cpm", hue="sample", col="tissue", kind="kde",
                 palette=sample_colors, col_order=TISSUE_ORDER, common_norm=False,
                 linewidth=1, height=2.8, aspect=1, legend=False)
+plt.show()
+""")
+
+code("""
+# (Optional) Step 2 – figure-level functions return a grid object `g`; customise it, then show g.figure
 g.set_axis_labels("log$_2$(CPM + 1)", "Density")
 g.set_titles("{col_name}")
 g.add_legend(legend_data={k: plt.Line2D([], [], color=c) for k, c in CONDITION_COLORS.items()},
              title="Condition")
-plt.show()
+g.figure
 """)
 
 md("""
@@ -290,28 +339,39 @@ using a strip plot alone) shows the reader your real sample size and spread.
 """)
 
 code("""
+# Step 1 – two Axes side by side; on the left, a bar chart of the means
 gene = "SOD2"
 df_gene = expr_long[expr_long["gene"] == gene]
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 3.2), sharey=True)
-
-# ❌ Mean-only bar chart: hides n and variability
 sns.barplot(data=df_gene, x="tissue", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
             order=TISSUE_ORDER, errorbar=None, ax=axes[0], legend=False)
-axes[0].set_title("Bar of means (avoid)")
+plt.show()
+""")
 
-# ✅ Box + individual points
+code("""
+# Step 2 – on the right, a box plot of the same data
 sns.boxplot(data=df_gene, x="tissue", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
             order=TISSUE_ORDER, fill=False, showfliers=False, ax=axes[1], legend=False)
+fig
+""")
+
+code("""
+# Step 3 – overlay the individual samples (now the real n = 3 is visible)
 sns.stripplot(data=df_gene, x="tissue", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
               order=TISSUE_ORDER, dodge=True, size=6, edgecolor="black", linewidth=0.5, ax=axes[1])
-axes[1].set_title("Box + points (better)")
+fig
+""")
 
+code("""
+# Step 4 – titles, labels and legend
+axes[0].set_title("Bar of means (avoid)")
+axes[1].set_title("Box + points (better)")
 for ax in axes:
     ax.set(xlabel="", ylabel=f"{gene} log$_2$(CPM + 1)")
 sns.move_legend(axes[1], "upper left", bbox_to_anchor=(1, 1), frameon=False, title="Condition")
-plt.tight_layout()
-plt.show()
+fig.tight_layout()
+fig
 """)
 
 md("""
@@ -325,26 +385,36 @@ Use the **figure-level** `sns.catplot` to show the expression of four inflammati
 """)
 
 ex("""
+# Step 1 – draw the small multiples
 genes = ["IL6", "ICAM1", "TNFAIP3", "C3"]
 df = expr_long[expr_long["gene"].isin(___)]
 
 g = sns.catplot(data=df, x="tissue", y="log2cpm", hue=___, col=___, col_wrap=2,
                 kind="strip", dodge=True, palette=CONDITION_COLORS, order=TISSUE_ORDER,
                 sharey=___, height=2.5, aspect=1.2, s=50, edgecolor="black", linewidth=0.5)
-g.set_titles("{col_name}")
-g.set_axis_labels("", "log$_2$(CPM + 1)")
 plt.show()
 """, """
+# Step 1 – draw the small multiples
 genes = ["IL6", "ICAM1", "TNFAIP3", "C3"]
 df = expr_long[expr_long["gene"].isin(genes)]
 
 g = sns.catplot(data=df, x="tissue", y="log2cpm", hue="condition", col="gene", col_wrap=2,
                 col_order=genes, kind="strip", dodge=True, palette=CONDITION_COLORS, order=TISSUE_ORDER,
                 sharey=False, height=2.5, aspect=1.2, s=50, edgecolor="black", linewidth=0.5)
-g.set_titles("{col_name}", fontstyle="italic")   # gene symbols are conventionally italic
-g.set_axis_labels("", "log$_2$(CPM + 1)")
 plt.show()
 # sharey=False: genes have very different baseline expression, a shared axis would flatten the differences.
+""")
+
+ex("""
+# Step 2 – panel titles and axis labels
+g.set_titles("{col_name}")
+g.set_axis_labels("", ___)
+g.figure
+""", """
+# Step 2 – panel titles and axis labels
+g.set_titles("{col_name}", fontstyle="italic")   # gene symbols are conventionally italic
+g.set_axis_labels("", "log$_2$(CPM + 1)")
+g.figure
 """)
 
 # =============================================================================
@@ -374,27 +444,38 @@ de["status"].value_counts()
 """)
 
 code("""
+# Step 1 – the scatter plot itself, one point per gene, coloured by DE status
 fig, ax = plt.subplots(figsize=(5, 4.5))
 sns.scatterplot(data=de, x="log2FoldChange", y="neg_log10_padj", hue="status", palette=DE_COLORS,
                 hue_order=list(DE_COLORS), s=8, linewidth=0, alpha=0.8, rasterized=True, ax=ax)
+plt.show()
+""")
 
-# Threshold lines
+code("""
+# Step 2 – dashed threshold lines
 ax.axhline(-np.log10(PADJ), color="black", ls="--", lw=0.8)
 for x in (-LFC, LFC):
     ax.axvline(x, color="black", ls="--", lw=0.8)
+fig
+""")
 
-# Label the top genes (most significant among the strongly changed ones).
+code("""
+# Step 3 – label the top genes (most significant among the strongly changed ones).
 # adjustText nudges the labels so they don't overlap each other or the points.
 from adjustText import adjust_text
 top = de[de.status != "not significant"].nsmallest(10, "padj")
 texts = [ax.text(r.log2FoldChange, r.neg_log10_padj, g, fontsize=8, fontstyle="italic")
          for g, r in top.iterrows()]
 adjust_text(texts, ax=ax, arrowprops=dict(arrowstyle="-", color="black", lw=0.5))
+fig
+""")
 
+code("""
+# Step 4 – axis labels with units, title and a cleaner legend
 ax.set(xlabel="log$_2$ fold change (CoV2 / mock)", ylabel="−log$_{10}$ adjusted p-value",
        title="Cornea: SARS-CoV-2 vs mock")
 ax.legend(markerscale=2, title=None, frameon=True, framealpha=0.9, edgecolor="none", loc="upper left")
-plt.show()
+fig
 """)
 
 md("""
@@ -410,26 +491,44 @@ Make an **MA plot** of the same results: `log10(baseMean)` on the x-axis, `log2F
 """)
 
 ex("""
+# Step 1 – scatter plot
 de["log10_baseMean"] = np.log10(de["baseMean"])
 
 fig, ax = plt.subplots(figsize=(5, 4))
 sns.scatterplot(data=de, x=___, y=___, hue="status", palette=DE_COLORS, hue_order=list(DE_COLORS),
                 s=6, linewidth=0, rasterized=True, ax=ax)
-ax.axhline(___, color="black", lw=0.8)
-ax.set(xlabel=___, ylabel=___)
-ax.legend(frameon=False, markerscale=2)
 plt.show()
 """, """
+# Step 1 – scatter plot
 de["log10_baseMean"] = np.log10(de["baseMean"])
 
 fig, ax = plt.subplots(figsize=(5, 4))
 sns.scatterplot(data=de, x="log10_baseMean", y="log2FoldChange", hue="status", palette=DE_COLORS,
                 hue_order=list(DE_COLORS), s=6, linewidth=0, rasterized=True, ax=ax)
+plt.show()
+""")
+
+ex("""
+# Step 2 – reference line at "no change"
+ax.axhline(___, color="black", lw=0.8)
+fig
+""", """
+# Step 2 – reference line at "no change"
 ax.axhline(0, color="black", lw=0.8)
+fig
+""")
+
+ex("""
+# Step 3 – labels and legend
+ax.set(xlabel=___, ylabel=___)
+ax.legend(frameon=False, markerscale=2)
+fig
+""", """
+# Step 3 – labels and legend
 ax.set(xlabel="log$_{10}$ mean normalised count", ylabel="log$_2$ fold change (CoV2 / mock)",
        title="MA plot – cornea")
 ax.legend(frameon=False, markerscale=2)
-plt.show()
+fig
 """)
 
 # =============================================================================
@@ -450,15 +549,20 @@ Heatmaps show a matrix of values as colours. Two common uses:
 """)
 
 code("""
-# (Optional) Use the 1,000 most variable genes to focus on signal
+# (Optional) Step 1 – correlation between samples, using the 1,000 most variable genes
 top_var = expr.var(axis=1).nlargest(1000).index
 corr = expr.loc[top_var].corr(method="pearson")
 
 fig, ax = plt.subplots(figsize=(6.5, 5.5))
 sns.heatmap(corr, cmap="mako", square=True, linewidths=0.3,
             cbar_kws={"label": "Pearson r", "shrink": 0.7}, ax=ax)
-ax.set(xlabel="", ylabel="", title="Sample correlation (top 1,000 variable genes)")
 plt.show()
+""")
+
+code("""
+# (Optional) Step 2 – remove the redundant axis labels and add a title
+ax.set(xlabel="", ylabel="", title="Sample correlation (top 1,000 variable genes)")
+fig
 """)
 
 md("""
@@ -469,6 +573,7 @@ show each sample's group. We **z-score each gene** (`z_score=0`) so that we comp
 """)
 
 code("""
+# Step 1 – clustered heatmap of the 50 most variable genes, with tissue/condition colour bars
 top50 = expr.var(axis=1).nlargest(50).index
 col_colors = pd.DataFrame({
     "tissue":    meta.set_index("sample")["tissue"].map(TISSUE_COLORS),
@@ -478,6 +583,11 @@ col_colors = pd.DataFrame({
 g = sns.clustermap(expr.loc[top50], z_score=0, cmap="vlag", center=0, vmin=-2.5, vmax=2.5,
                    col_colors=col_colors, figsize=(7, 9), dendrogram_ratio=(0.12, 0.08),
                    cbar_pos=(0.02, 0.83, 0.03, 0.12), yticklabels=True)
+plt.show()
+""")
+
+code("""
+# Step 2 – clustermap is made of several Axes (g.ax_heatmap, g.ax_cbar, g.ax_col_dendrogram...): customise each
 g.ax_cbar.set_title("z-score", fontsize=9)
 g.ax_heatmap.set(xlabel="", ylabel="")
 g.ax_heatmap.tick_params(axis="y", labelsize=7)
@@ -485,7 +595,7 @@ g.ax_heatmap.tick_params(axis="y", labelsize=7)
 # Legends for the colour bars (clustermap does not make them automatically)
 handles = [Patch(color=c, label=k) for k, c in {**TISSUE_COLORS, **CONDITION_COLORS}.items()]
 g.ax_col_dendrogram.legend(handles=handles, ncol=5, loc="center", bbox_to_anchor=(0.5, 1.3), frameon=False)
-plt.show()
+g.figure
 """)
 
 md("""
@@ -498,14 +608,17 @@ Keep `z_score=0` and a diverging colour map. The CoV2 and mock samples separate 
 """)
 
 ex("""
+# Step 1 – the clustered heatmap
 genes30 = de.nsmallest(___, "padj").index
 cornea_samples = meta.loc[meta["tissue"] == ___, "sample"]
 
 g = sns.clustermap(expr.loc[genes30, cornea_samples], z_score=___, cmap=___, center=0,
                    col_colors=col_colors.loc[cornea_samples, ["condition"]],
-                   figsize=(5, 8), yticklabels=True, cbar_kws={"label": "z-score"})
+                   figsize=(5, 8), yticklabels=True,
+                   dendrogram_ratio=(0.15, 0.1), cbar_pos=(0.02, 0.85, 0.03, 0.1))
 plt.show()
 """, """
+# Step 1 – the clustered heatmap
 genes30 = de.nsmallest(30, "padj").index
 cornea_samples = meta.loc[meta["tissue"] == "cornea", "sample"]
 
@@ -513,10 +626,21 @@ g = sns.clustermap(expr.loc[genes30, cornea_samples], z_score=0, cmap="vlag", ce
                    col_colors=col_colors.loc[cornea_samples, ["condition"]],
                    figsize=(5, 8), yticklabels=True,
                    dendrogram_ratio=(0.15, 0.1), cbar_pos=(0.02, 0.85, 0.03, 0.1))
+plt.show()
+""")
+
+ex("""
+# Step 2 – colour-bar title and tidier labels
+g.ax_cbar.set_title(___, fontsize=9)
+g.ax_heatmap.tick_params(axis="y", labelsize=8)
+g.ax_heatmap.set(xlabel="", ylabel="")
+g.figure
+""", """
+# Step 2 – colour-bar title and tidier labels
 g.ax_cbar.set_title("z-score", fontsize=9)
 g.ax_heatmap.tick_params(axis="y", labelsize=8)
 g.ax_heatmap.set(xlabel="", ylabel="")
-plt.show()
+g.figure
 # The perfect split is NOT evidence: we selected these 30 genes *because* they differ between CoV2 and mock,
 # so they will always separate the groups (circular analysis). Such a heatmap illustrates the DE result;
 # an unbiased view (e.g. top *variable* genes, or PCA) is needed to show that groups separate.
@@ -565,6 +689,7 @@ emb.head()
 """)
 
 code("""
+# Step 1 – three Axes, one scatter plot per method (hue = tissue, marker style = condition)
 fig, axes = plt.subplots(1, 3, figsize=(12, 3.8))
 panels = [("PC1", "PC2", "PCA"), ("tSNE1", "tSNE2", "t-SNE"), ("UMAP1", "UMAP2", "UMAP")]
 
@@ -573,13 +698,17 @@ for ax, (x, y, title) in zip(axes, panels):
                     hue_order=TISSUE_ORDER, style_order=CONDITION_ORDER, s=80,
                     edgecolor="black", linewidth=0.5, ax=ax, legend=(ax is axes[-1]))
     ax.set_title(title)
+plt.show()
+""")
 
+code("""
+# Step 2 – PCA axes get "% variance explained"; t-SNE/UMAP coordinates have no units, so hide their ticks
 axes[0].set(xlabel=f"PC1 ({var_exp[0]:.0f}% variance)", ylabel=f"PC2 ({var_exp[1]:.0f}% variance)")
 for ax in axes[1:]:
-    ax.set(xticks=[], yticks=[])          # t-SNE/UMAP coordinates have no units
+    ax.set(xticks=[], yticks=[])
 sns.move_legend(axes[-1], "upper left", bbox_to_anchor=(1, 1), frameon=False)
-plt.tight_layout()
-plt.show()
+fig.tight_layout()
+fig
 """)
 
 md("""
@@ -649,8 +778,8 @@ Journals want figures at an exact **physical size** (typically ~85 mm for one co
 3. Draw each panel with **axes-level** functions (`ax=...`).
 4. Add panel labels and save as **vector** (PDF/SVG) for editing in Inkscape, plus a high-dpi PNG.
 
-We apply the paper style with `with plt.rc_context(PAPER):` so it only affects the figure built inside the
-`with` block – the rest of the notebook keeps its normal look.
+We switch to the paper style with `plt.rcParams.update(PAPER)`. It applies to **every figure created from now on**
+(Module 6 is the last plotting module, so earlier plots are not affected).
 """)
 
 code("""
@@ -667,10 +796,101 @@ PAPER = {
     "pdf.fonttype": 42,              # embed real fonts: text stays editable in Inkscape/Illustrator
     "svg.fonttype": "none",          # keep text as text (not paths) in SVG
 }
+plt.rcParams.update(PAPER)
 """)
 
 md("""
-#### Exporting
+#### Step 1 – the empty layout
+
+Letters name the panels; `;` separates rows, and a repeated letter makes a panel span several cells (e.g. `"AB;CC"`).
+We add the bold panel labels straight away, so you can see which Axes is which.
+""")
+
+code("""
+fig, axd = plt.subplot_mosaic("AB;CD", figsize=(180 * MM, 140 * MM), layout="constrained",
+                              gridspec_kw={"width_ratios": [1, 1.15]})
+
+for label, ax in axd.items():                 # axd is a dictionary: {"A": Axes, "B": Axes, ...}
+    ax.text(-0.02, 1.02, label, transform=ax.transAxes, fontsize=10, fontweight="bold",
+            ha="right", va="bottom")
+plt.show()
+""")
+
+md("""
+#### Steps 2–5 – fill the panels one at a time
+
+Each cell draws on one Axes of the same `fig`; watch how `layout="constrained"` rearranges the panels as content is added.
+""")
+
+code("""
+# Step 2 – panel A: PCA
+ax = axd["A"]
+sns.scatterplot(data=emb, x="PC1", y="PC2", hue="tissue", style="condition", palette=TISSUE_COLORS,
+                hue_order=TISSUE_ORDER, style_order=CONDITION_ORDER, s=30, edgecolor="black",
+                linewidth=0.4, ax=ax)
+ax.set(xlabel=f"PC1 ({var_exp[0]:.0f}%)", ylabel=f"PC2 ({var_exp[1]:.0f}%)")
+sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1), frameon=False, title=None)
+fig
+""")
+
+code("""
+# Step 3 – panel B: volcano plot (same recipe as Module 3, with smaller points and fonts)
+ax = axd["B"]
+sns.scatterplot(data=de, x="log2FoldChange", y="neg_log10_padj", hue="status", palette=DE_COLORS,
+                hue_order=list(DE_COLORS), s=3, linewidth=0, rasterized=True, legend=False, ax=ax)
+ax.axhline(-np.log10(PADJ), color="black", ls="--", lw=0.5)
+for x in (-LFC, LFC):
+    ax.axvline(x, color="black", ls="--", lw=0.5)
+texts = [ax.text(r.log2FoldChange, r.neg_log10_padj, g, fontsize=6, fontstyle="italic")
+         for g, r in top.iterrows()]
+adjust_text(texts, ax=ax, arrowprops=dict(arrowstyle="-", color="black", lw=0.3))
+n_up, n_down = (de.status == "up in CoV2").sum(), (de.status == "down in CoV2").sum()
+ax.text(0.98, 0.55, f"{n_up} up", color=DE_COLORS["up in CoV2"], ha="right", transform=ax.transAxes)
+ax.text(0.02, 0.55, f"{n_down} down", color=DE_COLORS["down in CoV2"], transform=ax.transAxes)
+ax.set(xlabel="log$_2$ fold change (CoV2 / mock)", ylabel="−log$_{10}$ adj. p-value", title="Cornea")
+fig
+""")
+
+code("""
+# Step 4 – panel C: one gene across tissues, box + points
+ax = axd["C"]
+df_gene = expr_long[expr_long["gene"] == "IL6"]
+sns.boxplot(data=df_gene, x="tissue", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
+            order=TISSUE_ORDER, fill=False, showfliers=False, linewidth=0.6, ax=ax, legend=False)
+sns.stripplot(data=df_gene, x="tissue", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
+              order=TISSUE_ORDER, dodge=True, size=3.5, edgecolor="black", linewidth=0.3, ax=ax)
+ax.set(xlabel="", ylabel="$\\\\it{IL6}$ log$_2$(CPM + 1)")
+sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1), frameon=False, title=None)
+fig
+""")
+
+md("""
+`sns.clustermap` makes its own figure, so it can't go inside our layout. For panel D we **cluster the genes ourselves**
+(with SciPy) and draw an ordinary `sns.heatmap`.
+""")
+
+code("""
+# Step 5 – panel D: heatmap of the top DE genes, clustered by hand
+from scipy.cluster.hierarchy import linkage, leaves_list
+
+ax = axd["D"]
+genes = de.nsmallest(25, "padj").index
+cornea = meta.query("tissue == 'cornea'").sort_values("condition", ascending=False)["sample"]
+mat = expr.loc[genes, cornea]
+mat = mat.sub(mat.mean(axis=1), axis=0).div(mat.std(axis=1), axis=0)     # z-score per gene
+mat = mat.iloc[leaves_list(linkage(mat, method="average"))]               # cluster genes
+sns.heatmap(mat, cmap="vlag", center=0, vmin=-2, vmax=2, ax=ax,
+            cbar_kws={"label": "z-score", "shrink": 0.6})
+ax.set(xlabel="", ylabel="")
+ax.set_xticklabels([f"{s}\\n{meta.set_index('sample').loc[s, 'condition']}" for s in cornea], rotation=0)
+ax.tick_params(axis="y", labelsize=6, length=0)
+for lab in ax.get_yticklabels():
+    lab.set_fontstyle("italic")
+fig
+""")
+
+md("""
+#### Step 6 – exporting
 
 | Format | Use it for | Notes |
 |---|---|---|
@@ -680,77 +900,12 @@ md("""
 * We do **not** use `bbox_inches="tight"` for the journal export: it crops or grows the canvas, so the file would no
   longer be exactly 180 mm wide. `layout="constrained"` already keeps labels and legends inside the figure.
 * Never take a screenshot of a plot for a paper!
-
-`sns.clustermap` makes its own figure, so it can't go inside our layout. For panel D we **cluster the genes ourselves**
-(with SciPy) and draw an ordinary `sns.heatmap`.
 """)
 
 code("""
-from scipy.cluster.hierarchy import linkage, leaves_list
-
-with plt.rc_context(PAPER):
-    # Layout: letters name the panels; ";" separates rows, a repeated letter spans cells (e.g. "AB;CC")
-    fig, axd = plt.subplot_mosaic("AB;CD", figsize=(180 * MM, 140 * MM), layout="constrained",
-                                  gridspec_kw={"width_ratios": [1, 1.15]})
-
-    # ---- A: PCA ---------------------------------------------------------------------
-    ax = axd["A"]
-    sns.scatterplot(data=emb, x="PC1", y="PC2", hue="tissue", style="condition", palette=TISSUE_COLORS,
-                    hue_order=TISSUE_ORDER, style_order=CONDITION_ORDER, s=30, edgecolor="black",
-                    linewidth=0.4, ax=ax)
-    ax.set(xlabel=f"PC1 ({var_exp[0]:.0f}%)", ylabel=f"PC2 ({var_exp[1]:.0f}%)")
-    sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1), frameon=False, title=None)
-
-    # ---- B: volcano -----------------------------------------------------------------
-    ax = axd["B"]
-    sns.scatterplot(data=de, x="log2FoldChange", y="neg_log10_padj", hue="status", palette=DE_COLORS,
-                    hue_order=list(DE_COLORS), s=3, linewidth=0, rasterized=True, legend=False, ax=ax)
-    ax.axhline(-np.log10(PADJ), color="black", ls="--", lw=0.5)
-    for x in (-LFC, LFC):
-        ax.axvline(x, color="black", ls="--", lw=0.5)
-    texts = [ax.text(r.log2FoldChange, r.neg_log10_padj, g, fontsize=6, fontstyle="italic")
-             for g, r in top.iterrows()]
-    adjust_text(texts, ax=ax, arrowprops=dict(arrowstyle="-", color="black", lw=0.3))
-    n_up, n_down = (de.status == "up in CoV2").sum(), (de.status == "down in CoV2").sum()
-    ax.text(0.98, 0.55, f"{n_up} up", color=DE_COLORS["up in CoV2"], ha="right", transform=ax.transAxes)
-    ax.text(0.02, 0.55, f"{n_down} down", color=DE_COLORS["down in CoV2"], transform=ax.transAxes)
-    ax.set(xlabel="log$_2$ fold change (CoV2 / mock)", ylabel="−log$_{10}$ adj. p-value", title="Cornea")
-
-    # ---- C: single gene across tissues ----------------------------------------------
-    ax = axd["C"]
-    df_gene = expr_long[expr_long["gene"] == "IL6"]
-    sns.boxplot(data=df_gene, x="tissue", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
-                order=TISSUE_ORDER, fill=False, showfliers=False, linewidth=0.6, ax=ax, legend=False)
-    sns.stripplot(data=df_gene, x="tissue", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
-                  order=TISSUE_ORDER, dodge=True, size=3.5, edgecolor="black", linewidth=0.3, ax=ax)
-    ax.set(xlabel="", ylabel="$\\\\it{IL6}$ log$_2$(CPM + 1)")
-    sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1), frameon=False, title=None)
-
-    # ---- D: heatmap of top DE genes (clustered by hand) ------------------------------
-    ax = axd["D"]
-    genes = de.nsmallest(25, "padj").index
-    cornea = meta.query("tissue == 'cornea'").sort_values("condition", ascending=False)["sample"]
-    mat = expr.loc[genes, cornea]
-    mat = mat.sub(mat.mean(axis=1), axis=0).div(mat.std(axis=1), axis=0)     # z-score per gene
-    mat = mat.iloc[leaves_list(linkage(mat, method="average"))]               # cluster genes
-    sns.heatmap(mat, cmap="vlag", center=0, vmin=-2, vmax=2, ax=ax,
-                cbar_kws={"label": "z-score", "shrink": 0.6})
-    ax.set(xlabel="", ylabel="")
-    ax.set_xticklabels([f"{s}\\n{meta.set_index('sample').loc[s, 'condition']}" for s in cornea], rotation=0)
-    ax.tick_params(axis="y", labelsize=6, length=0)
-    for lab in ax.get_yticklabels():
-        lab.set_fontstyle("italic")
-
-    # ---- Panel labels ---------------------------------------------------------------
-    for label, ax in axd.items():
-        ax.text(-0.02, 1.02, label, transform=ax.transAxes, fontsize=10, fontweight="bold",
-                ha="right", va="bottom")
-
-    # ---- Export (inside the with-block so the export settings apply) ----------------
-    fig.savefig(FIGS / "Figure1_cornea_CoV2.pdf")
-    fig.savefig(FIGS / "Figure1_cornea_CoV2.svg")
-    fig.savefig(FIGS / "Figure1_cornea_CoV2.png", dpi=600)
-    plt.show()
+fig.savefig(FIGS / "Figure1_cornea_CoV2.pdf")
+fig.savefig(FIGS / "Figure1_cornea_CoV2.svg")
+fig.savefig(FIGS / "Figure1_cornea_CoV2.png", dpi=600)
 
 w, h = fig.get_size_inches() / MM
 print(f"Exported at {w:.0f} x {h:.0f} mm:", sorted(p.name for p in FIGS.iterdir()))
@@ -788,69 +943,92 @@ CC
 * **B** – MA plot (`de`, as in Exercise 3)
 * **C** – expression of `SOD2` in all 18 samples (`sns.stripplot`), coloured by condition
 
-Add panel labels, then export as **PDF**, **SVG** *and* **PNG (600 dpi)**. Download them and bring them to Day 4!
+Build it step by step (one cell per panel), then export as **PDF**, **SVG** *and* **PNG (600 dpi)**.
+Download the files and bring them to Day 4!
 """)
 
 ex("""
-with plt.rc_context(PAPER):
-    fig, axd = plt.subplot_mosaic(___, figsize=(___ * MM, ___ * MM), layout="constrained")
-
-    # A: PCA
-    sns.scatterplot(data=emb, x="PC1", y="PC2", hue="tissue", palette=TISSUE_COLORS, s=30, ax=axd["A"])
-    # B: MA plot
-    de["log10_baseMean"] = np.log10(de["baseMean"])
-    sns.scatterplot(data=de, x=___, y=___, hue="status", palette=DE_COLORS, s=3, linewidth=0,
-                    rasterized=True, ax=axd["B"])
-    # C: SOD2 per sample
-    df = expr_long[expr_long["gene"] == "SOD2"]
-    sns.stripplot(data=df, x="sample", y="log2cpm", hue=___, palette=CONDITION_COLORS, ax=axd[___])
-    axd["C"].tick_params(axis="x", rotation=90)
-
-    for label, ax in axd.items():
-        ax.text(-0.02, 1.02, label, transform=ax.transAxes, fontsize=10, fontweight="bold", ha="right", va="bottom")
-
-    fig.savefig(FIGS / "Exercise6.pdf")
-    fig.savefig(FIGS / "Exercise6.svg")
-    fig.savefig(FIGS / "Exercise6.png", dpi=___)
-    plt.show()
+# Step 1 – empty layout with panel labels
+fig, axd = plt.subplot_mosaic(___, figsize=(___ * MM, ___ * MM), layout="constrained")
+for label, ax in axd.items():
+    ax.text(-0.02, 1.02, label, transform=ax.transAxes, fontsize=10, fontweight="bold", ha="right", va="bottom")
+plt.show()
 """, """
-with plt.rc_context(PAPER):
-    fig, axd = plt.subplot_mosaic("AB;CC", figsize=(180 * MM, 120 * MM), layout="constrained")
+# Step 1 – empty layout with panel labels
+fig, axd = plt.subplot_mosaic("AB;CC", figsize=(180 * MM, 120 * MM), layout="constrained")
+for label, ax in axd.items():
+    ax.text(-0.02, 1.02, label, transform=ax.transAxes, fontsize=10, fontweight="bold", ha="right", va="bottom")
+plt.show()
+""")
 
-    # A: PCA
-    sns.scatterplot(data=emb, x="PC1", y="PC2", hue="tissue", style="condition", palette=TISSUE_COLORS,
-                    hue_order=TISSUE_ORDER, style_order=CONDITION_ORDER, s=30, edgecolor="black",
-                    linewidth=0.4, ax=axd["A"])
-    axd["A"].set(xlabel=f"PC1 ({var_exp[0]:.0f}%)", ylabel=f"PC2 ({var_exp[1]:.0f}%)")
-    sns.move_legend(axd["A"], "upper left", bbox_to_anchor=(1, 1), frameon=False, title=None)
+ex("""
+# Step 2 – panel A: PCA
+sns.scatterplot(data=emb, x="PC1", y="PC2", hue="tissue", palette=TISSUE_COLORS, s=30, ax=axd[___])
+fig
+""", """
+# Step 2 – panel A: PCA
+sns.scatterplot(data=emb, x="PC1", y="PC2", hue="tissue", style="condition", palette=TISSUE_COLORS,
+                hue_order=TISSUE_ORDER, style_order=CONDITION_ORDER, s=30, edgecolor="black",
+                linewidth=0.4, ax=axd["A"])
+axd["A"].set(xlabel=f"PC1 ({var_exp[0]:.0f}%)", ylabel=f"PC2 ({var_exp[1]:.0f}%)")
+sns.move_legend(axd["A"], "upper left", bbox_to_anchor=(1, 1), frameon=False, title=None)
+fig
+""")
 
-    # B: MA plot
-    de["log10_baseMean"] = np.log10(de["baseMean"])
-    sns.scatterplot(data=de, x="log10_baseMean", y="log2FoldChange", hue="status", palette=DE_COLORS,
-                    hue_order=list(DE_COLORS), s=3, linewidth=0, rasterized=True, ax=axd["B"])
-    axd["B"].axhline(0, color="black", lw=0.5)
-    axd["B"].set(xlabel="log$_{10}$ mean normalised count", ylabel="log$_2$ FC (CoV2 / mock)")
-    axd["B"].legend(frameon=False, markerscale=2)
+ex("""
+# Step 3 – panel B: MA plot
+de["log10_baseMean"] = np.log10(de["baseMean"])
+sns.scatterplot(data=de, x=___, y=___, hue="status", palette=DE_COLORS, s=3, linewidth=0,
+                rasterized=True, ax=axd["B"])
+fig
+""", """
+# Step 3 – panel B: MA plot
+de["log10_baseMean"] = np.log10(de["baseMean"])
+sns.scatterplot(data=de, x="log10_baseMean", y="log2FoldChange", hue="status", palette=DE_COLORS,
+                hue_order=list(DE_COLORS), s=3, linewidth=0, rasterized=True, ax=axd["B"])
+axd["B"].axhline(0, color="black", lw=0.5)
+axd["B"].set(xlabel="log$_{10}$ mean normalised count", ylabel="log$_2$ FC (CoV2 / mock)")
+axd["B"].legend(frameon=False, markerscale=2)
+fig
+""")
 
-    # C: SOD2 per sample
-    df = expr_long[expr_long["gene"] == "SOD2"]
-    sns.stripplot(data=df, x="sample", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
-                  hue_order=CONDITION_ORDER, size=5, edgecolor="black", linewidth=0.4, ax=axd["C"])
-    for i, t in enumerate(TISSUE_ORDER):                # tissue labels above each group of 6 samples
-        axd["C"].text(i * 6 + 2.5, 1.0, t, transform=axd["C"].get_xaxis_transform(), ha="center", va="bottom")
-        if i:
-            axd["C"].axvline(i * 6 - 0.5, color="grey", lw=0.5, ls=":")
-    axd["C"].set(xlabel="", ylabel="$\\\\it{SOD2}$ log$_2$(CPM + 1)")
-    axd["C"].tick_params(axis="x", rotation=90)
-    sns.move_legend(axd["C"], "upper left", bbox_to_anchor=(1, 1), frameon=False, title=None)
+ex("""
+# Step 4 – panel C: SOD2 in every sample
+df = expr_long[expr_long["gene"] == "SOD2"]
+sns.stripplot(data=df, x="sample", y="log2cpm", hue=___, palette=CONDITION_COLORS, ax=axd[___])
+axd["C"].tick_params(axis="x", rotation=90)
+fig
+""", """
+# Step 4 – panel C: SOD2 in every sample
+df = expr_long[expr_long["gene"] == "SOD2"]
+sns.stripplot(data=df, x="sample", y="log2cpm", hue="condition", palette=CONDITION_COLORS,
+              hue_order=CONDITION_ORDER, size=5, edgecolor="black", linewidth=0.4, ax=axd["C"])
+for i, t in enumerate(TISSUE_ORDER):                # tissue labels above each group of 6 samples
+    axd["C"].text(i * 6 + 2.5, 1.0, t, transform=axd["C"].get_xaxis_transform(), ha="center", va="bottom")
+    if i:
+        axd["C"].axvline(i * 6 - 0.5, color="grey", lw=0.5, ls=":")
+axd["C"].set(xlabel="", ylabel="$\\\\it{SOD2}$ log$_2$(CPM + 1)")
+axd["C"].tick_params(axis="x", rotation=90)
+sns.move_legend(axd["C"], "upper left", bbox_to_anchor=(1, 1), frameon=False, title=None)
+fig
+""")
 
-    for label, ax in axd.items():
-        ax.text(-0.02, 1.02, label, transform=ax.transAxes, fontsize=10, fontweight="bold", ha="right", va="bottom")
-
-    fig.savefig(FIGS / "Exercise6.pdf")
-    fig.savefig(FIGS / "Exercise6.svg")
-    fig.savefig(FIGS / "Exercise6.png", dpi=600)
-    plt.show()
+ex("""
+# Step 5 – export (and download if you are on Colab)
+fig.savefig(FIGS / "Exercise6.pdf")
+fig.savefig(FIGS / "Exercise6.svg")
+fig.savefig(FIGS / "Exercise6.png", dpi=___)
+if using_colab:
+    from google.colab import files
+    files.download(str(FIGS / "Exercise6.svg"))
+""", """
+# Step 5 – export (and download if you are on Colab)
+fig.savefig(FIGS / "Exercise6.pdf")
+fig.savefig(FIGS / "Exercise6.svg")
+fig.savefig(FIGS / "Exercise6.png", dpi=600)
+if using_colab:
+    from google.colab import files
+    files.download(str(FIGS / "Exercise6.svg"))
 """)
 
 # =============================================================================
@@ -902,7 +1080,8 @@ def build(solutions: bool):
         elif kind == "code":
             nb.cells.append(nbf.v4.new_code_cell(a))
         else:
-            src = b if solutions else "# ✏️ Fill in the blanks (___), then run the cell\n" + a
+            hint = "# ✏️ Fill in the blanks (___), then run the cell\n" if "___" in a else "# ✏️ Run this step\n"
+            src = b if solutions else hint + a
             nb.cells.append(nbf.v4.new_code_cell(src, metadata={"tags": ["exercise"]}))
     return nb
 
